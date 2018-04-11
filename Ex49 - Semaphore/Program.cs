@@ -12,39 +12,61 @@ namespace Ex49___Semaphore
     {
         static Semaphore semaphore = new Semaphore(10,10); //Skilift - 10 frie pladser, 10 max pladser
         static Random r = new Random();
+        static int count = 0;
+        static long averageTime = 0;
+        static object _locker = new object();
+
         static void Main(string[] args)
         {
-
+            Thread[] threadArray = new Thread[10];
             for(int i = 0;i < 10;i++)
             {
-                new Thread(Arrival).Start();
+                threadArray[i] = new Thread(Arrival);
+                threadArray[i].Start();
                 //Thread.Sleep(r.Next(1000,10000)); //10-20 sek. at komme ned af pisten/ankomme til liften
             }
+            for(int i = 0;i < threadArray.Length;i++)
+            {
+                threadArray[i].Join();
+            }
+            Console.WriteLine("AVERAGE TIME: " + averageTime);
             Console.ReadKey();
 
         }
         static void Arrival()
         {
+            
             for(int i = 0;i < r.Next(5,10);i++)
             {
                 //Ankomst
                 Stopwatch timer = new Stopwatch();
                 timer.Start();
-                semaphore.WaitOne();
                 Console.WriteLine("A new skier has arrived");
+                semaphore.WaitOne();
+                timer.Stop();
+                Console.WriteLine(timer.ElapsedMilliseconds);
+                
 
                 //På liften
-                Thread.Sleep(1000);
-                timer.Stop();
-
-                Console.WriteLine(timer.Elapsed);
+                Thread.Sleep(100);
 
                 //Af liften
                 Console.WriteLine("Skier off the lift!");
                 semaphore.Release();
-                Thread.Sleep(r.Next(10000,20000));
+
+                lock(_locker)
+                {
+                    averageTime = averageTime + timer.ElapsedMilliseconds;
+                }
+
+                count = count + 1;
+                Thread.Sleep(r.Next(10,21));
+                
             }
-            
+            //Gennemsnit
+            Console.WriteLine("Average time " + averageTime);
+        
+
         }
     }
 }
